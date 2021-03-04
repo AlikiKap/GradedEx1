@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body { margin: 0 }
+    </style>
+  </head>
+  <body>
+    <canvas id="target"></canvas>
+    <script>
+      const canvas = document.getElementById("target");
+      const context = canvas.getContext("2d");
+
+      canvas.width = 672;
+      canvas.height = 744;
+
+
+      class GameObject {
+        constructor(startX, startY, width, height, speedX, speedY) {
+          this.x = startX;
+          this.y = startY;
+          this.width = width;
+          this.height = height;
+          this.speedX = speedX;
+          this.speedY = speedY;
+          
+        }
+      
+
+
+        update(deltaTime) {
+          if((this.y >= canvas.height) || (this.y <= 0)) {
+            this.speedY = -this.speedY;
+          }
+          if(this.x >= canvas.width || (this.x <= 0)) {
+            this.speedX = -this.speedX;
+          }
+          this.y = this.y + this.speedY * deltaTime / 1000;
+          this.x = this.x + this.speedX * deltaTime / 1000;
+        }
+
+        draw() {
+          console.log('Draw not implemented');
+        }
+      }
+
+
+
+      class Player extends GameObject {
+        constructor(startX, startY, width, height, speedX, speedY) {
+          super(startX, startY, width, height, speedX, speedY);
+          this.frameCounter = 0;
+          this.animationFrames = 2;
+          this.frameTimeCounter = 0;
+          this.frameRate = 6; 
+          this.movementDirection = "UP";
+        }
+
+        moveUp() {
+          this.y = this.y - this.speedY;
+          this.movementDirection = "UP";
+        }
+
+        moveDown() {
+          this.y = this.y + this.speedY;
+          this.movementDirection = "DOWN";
+        }
+
+        moveLeft() {
+          this.x = this.x - this.speedX;
+          this.movementDirection = "LEFT";
+        }
+
+        moveRight() {
+          this.x = this.x + this.speedX;
+          this.movementDirection = "RIGHT";
+        }
+
+        update(deltaTime) {
+          this.frameTimeCounter += deltaTime;
+          if(this.frameTimeCounter > 1000 / this.frameRate) {
+            this.frameTimeCounter = 0;
+            this.frameCounter++;
+
+            if(this.frameCounter >= this.animationFrames) {
+              this.frameCounter = 0;
+            }
+          }
+        }
+
+        draw() {
+          let animationFrameStartCoordX = 0;
+          switch(this.movementDirection) {
+            case "UP":
+              animationFrameStartCoordX = 3;
+              break;
+            case "DOWN":
+              animationFrameStartCoordX = 219;
+              break;
+            case "LEFT":
+              animationFrameStartCoordX = 111;
+              break;
+            case "RIGHT":
+              animationFrameStartCoordX = 327;
+              break;
+          }
+
+          context.drawImage(froggerSheet,
+                            animationFrameStartCoordX + this.frameCounter * 48 + 6*this.frameCounter, // sx
+                            3,
+                            48, 
+                            48,
+                            this.x,
+                            this.y, 
+                            this.width,
+                            this.height); 
+        }
+
+        
+      }
+
+      class Rectangle extends GameObject {
+        update() {
+          if(((this.x + this.width) > player.x) &&
+             (this.x < (player.x + player.width)) &&
+             ((this.y + this.height) > player.y) &&
+             (this.y < (player.y + player.height))) {
+            console.log('Hitted the rectangle');
+          }
+        }
+
+        draw() {
+          context.beginPath();
+          context.rect(this.x, this.y, this.width, this.height, this.speedX);
+          context.fillStyle = {
+            red: Math.random() * 255,
+            green: Math.random() * 255,
+            blue: Math.random() * 255
+          };
+          context.fill();
+          context.lineWidth = 1;
+          context.strokeStyle = {
+            red: Math.random() * 255,
+            green: Math.random() * 255,
+            blue: Math.random() * 255
+          };
+          context.stroke();
+        }
+      }
+
+      class Background extends GameObject {
+        update() {
+          if(((this.x + this.width) > player.x) &&
+             (this.x < (player.x + player.width)) &&
+             ((this.y + this.height) > player.y) &&
+             (this.y < (player.y + player.height))) {
+            console.log('on the background');
+          }
+        }
+
+        draw() {
+          context.beginPath();
+          context.rect(this.x, this.y, this.width, this.height);
+          context.fillStyle ='green';
+          context.fill();
+          context.lineWidth = 1;
+          context.strokeStyle ='green';
+          context.stroke();
+        }
+      }
+      const safeZone = new Background(100,500,600,200,0,0);
+      const player = new Player(288, 500, 48, 48, 50, 50);
+      const rectangle = new Rectangle(100, 100, 200, 50, 20, 0);
+      const rectangle2 = new Rectangle(500, 150, 300, 50, 30, 0);
+      const rectangle3 = new Rectangle(450, 400, 100, 50, 10, 0);
+      const gameObjectStorage = [];
+      gameObjectStorage.push(player);
+      gameObjectStorage.push(rectangle);
+      gameObjectStorage.push(rectangle2);
+      gameObjectStorage.push(rectangle3);
+      let lastTimeStamp = 0;
+      function updateScreen(timeStamp) {
+
+          let deltaTime = timeStamp - lastTimeStamp;
+          lastTimeStamp = timeStamp;
+
+          context.clearRect(0,0,canvas.width,canvas.height);
+
+          for(let i = 0; i < gameObjectStorage.length; i++) {
+            gameObjectStorage[i].update(deltaTime);
+            gameObjectStorage[i].draw();
+          }
+
+          window.requestAnimationFrame(updateScreen);
+      }
+
+      const froggerSheet = new Image();
+      froggerSheet.onload = () => {
+        window.requestAnimationFrame(updateScreen);
+      }
+      froggerSheet.src = 'froggerSheet.png';
+
+      const car = new Image();
+      car.onload = () => {
+        window.requestAnimationFrame(updateScreen);
+      }
+      car.src = 'https://sun9-15.userapi.com/impg/HJz9OFTax_7iu8sCnSTk2yXN-yssMQCHJiUPvQ/g_mfDbmDs0A.jpg?size=91x48&quality=96&sign=c1f1d62379af1dd64380eaf4c9f58367&type=album';
+
+      window.requestAnimationFrame(updateScreen)
+
+
+      window.addEventListener('keydown', function(event){
+        switch(event.keyCode) {
+          case 37:
+            player.moveLeft();
+            break;
+          case 38:
+            player.moveUp();
+            break;
+          case 39:
+            player.moveRight();
+            break;
+          case 40:
+            player.moveDown();
+            break;
+        }
+      });
+    </script>
+  </body>
+</html>
